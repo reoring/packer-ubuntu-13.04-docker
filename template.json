@@ -1,0 +1,92 @@
+{
+    "variables": {
+        "aws_access_key": "",
+        "aws_secret_key": ""
+    },
+
+    "builders": [
+        {
+            "type": "virtualbox-iso",
+	    "iso_url": "http://ftp.jaist.ac.jp/pub/Linux/ubuntu-releases/13.04/ubuntu-13.04-server-amd64.iso",
+            "iso_checksum": "edf1194d7bc99b64dca177deecade9e13f0a8c3339c9fd8832471a2e7ed1dda5",
+            "iso_checksum_type": "sha256",
+            "boot_wait": "5s",
+            "boot_command": [
+                "<esc><esc><enter><wait>",
+                "/install/vmlinuz noapic preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+                "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+                "hostname={{ .Name }} ",
+                "fb=false debconf/frontend=noninteractive ",
+                "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+                "initrd=/install/initrd.gz -- <enter>"
+            ],
+            "http_directory": "http",
+            "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+            "ssh_wait_timeout": "20m",
+            "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+            "guest_os_type": "Ubuntu_64",
+            "virtualbox_version_file": ".vbox_version",
+            "ssh_username": "ubuntu",
+            "ssh_password": "vagrant"
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "scripts/vagrant.sh",
+            "override": {
+                "virtualbox-iso": {
+                    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'"
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "script": "scripts/virtualbox.sh",
+            "override": {
+                "virtualbox-iso": {
+                    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'"
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "script": "scripts/kernel.sh",
+            "override": {
+                "virtualbox-iso": {
+                    "execute_command": "/bin/true"
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "scripts": [
+                "scripts/docker.sh"
+            ],
+            "override": {
+                "virtualbox-iso": {
+                    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'"
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "scripts": [
+                "scripts/vm_cleanup.sh"
+            ],
+            "override": {
+                "virtualbox-iso": {
+                    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'"
+                }
+            }
+        }
+    ],
+
+    "post-processors": [
+        {
+            "type": "vagrant",
+            "keep_input_artifact": true
+        }
+    ]
+}
